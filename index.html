@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Elite Sports Management | Employee Management Center</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand-lockup" aria-label="Elite Sports Management logo">
+      <img class="brand-logo-small" src="assets/esm-logo.png" alt="Elite Sports Management logo" />
+      <div>
+        <div class="brand-name">Elite Sports Management</div>
+        <div class="brand-subtitle">Employee Management Center</div>
+      </div>
+    </div>
+    <nav class="top-actions admin-only-nav">
+      <button id="adminToggle" class="primary" onclick="toggleAdmin()">Admin Mode</button>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero refreshed">
+      <div class="hero-bg-badge">ESM</div>
+      <div class="hero-card">
+        <img class="hero-logo" src="assets/esm-logo.png" alt="Elite Sports Management logo" />
+        <div class="eyebrow">Welcome to the Elite Sports Management Benefits Portal</div>
+        <h1>Employees Are Our Greatest Asset</h1>
+        <p class="mission">
+          At Elite Sports Management, we recognize that our success is built on the dedication,
+          talent, and commitment of our employees. Every athlete coached, event produced, family
+          served, and customer supported is the direct result of the people who make up our organization.
+        </p>
+        <p>
+          The benefits offered through Elite Sports Management are designed to support our team members,
+          reward long-term commitment, encourage professional growth, and promote a healthy balance between
+          work and family life.
+        </p>
+        <div class="mission-card">
+          <h2>Our Mission</h2>
+          <p>Elite Sports Management exists to empower our family of companies through exceptional leadership, strategic coordination, and comprehensive operational support. By delivering expert human resources, financial management, and administrative services, we enable each company to achieve peak productivity and sustained success.</p>
+        </div>
+      </div>
+      <div class="hero-side-card compact-portal-actions">
+        <div class="side-title">What this portal helps you view</div>
+        <ul>
+          <li>Hire-date based benefit eligibility</li>
+          <li>Vacation, sick, and personal balances</li>
+          <li>Upcoming benefit milestones</li>
+          <li>Employee-visible notes</li>
+        </ul>
+        <div class="portal-action-buttons">
+          <button class="primary large" onclick="scrollToSection('employeeSearch')">Employee Access</button>
+          <button class="ghost large light" onclick="scrollToSection('ptoRequest')">PTO Request</button>
+          <button class="ghost large light" onclick="scrollToSection('benefitChart')">Benefit Chart</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="employeeSearch" class="panel employee-facing access-panel">
+      <div class="section-title centered">
+        <div>
+          <h2>Access Your Benefits Profile</h2>
+          <p>Enter your name and birthday PIN. Birthday PIN format is MMDD, such as 0315 for March 15.</p>
+        </div>
+      </div>
+      <div class="access-card">
+        <div class="search-row secure-search">
+          <input id="employeeSearchInput" type="search" placeholder="Employee name" oninput="renderEmployeeSearch()" />
+          <input id="employeePinInput" type="password" inputmode="numeric" maxlength="4" placeholder="Birthday PIN (MMDD)" oninput="renderEmployeeSearch()" />
+          <button class="primary" onclick="renderEmployeeSearch()">View My Benefits</button>
+        </div>
+        <div class="hint-line">For privacy, employee profiles require a matching name and birthday PIN.</div>
+      </div>
+      <div id="employeeSearchResults" class="results"></div>
+      <div id="employeeProfile" class="profile"></div>
+    </section>
+
+
+    <section id="benefitChart" class="panel benefit-chart-panel">
+      <div class="section-title centered">
+        <div>
+          <h2>ESM Benefit Chart</h2>
+          <p>General overview of possible ESM benefits. Employee profiles show only benefits currently active for that employee.</p>
+        </div>
+      </div>
+      <div class="table-wrap benefit-chart-table">
+        <table>
+          <thead><tr><th>Benefit</th><th>General Availability / Sliding Scale</th></tr></thead>
+          <tbody>
+            <tr><td>Vacation</td><td>Less than 1 year: 0 weeks; 1-5 years: 1 week; 6-10 years: 2 weeks; 11-20 years: 3 weeks; 21+ years: 4 weeks.</td></tr>
+            <tr><td>Sick Days</td><td>Available after one full year of service according to ESM policy.</td></tr>
+            <tr><td>Personal Days</td><td>Available after one full year of service according to ESM policy.</td></tr>
+            <tr><td>Paid Holidays</td><td>Company-recognized paid holidays listed in each active profile.</td></tr>
+            <tr><td>Paid Weather Closures</td><td>Applies when ESM closes due to qualifying inclement weather.</td></tr>
+            <tr><td>Health Care Offset</td><td>$3,600 annually for employees actively receiving HCO.</td></tr>
+            <tr><td>Elite Retirement Savings Plan</td><td>Employer matching benefit available according to plan guidelines. Contact gabby@elitesportsmgnt.com for information.</td></tr>
+            <tr><td>Maternity/Paternity Leave</td><td>Only one family leave benefit applies to a profile at a time: Maternity Leave or Paternity Leave.</td></tr>
+            <tr><td>Tuition Benefit</td><td>Applies according to ESM eligibility and admin tracking.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="ptoRequest" class="panel pto-request">
+      <div class="section-title">
+        <div>
+          <h2>Submit PTO Request</h2>
+          <p>Requests are submitted through the official ESM PTO Log.</p>
+        </div>
+        <a class="button-link" href="https://docs.google.com/forms/d/e/1FAIpQLSemcJD6q4DuEtAyDJwCjvNV41GRQ4JMERygPceE0OERyRpXPA/viewform?usp=sharing&ouid=105773198368027497233" target="_blank" rel="noopener">Open in New Tab</a>
+      </div>
+      <div class="form-frame-wrap">
+        <iframe title="ESM PTO Request Form" src="https://docs.google.com/forms/d/e/1FAIpQLSemcJD6q4DuEtAyDJwCjvNV41GRQ4JMERygPceE0OERyRpXPA/viewform?embedded=true" loading="lazy">Loading...</iframe>
+      </div>
+    </section>
+
+    <section id="adminPanel" class="panel admin-panel hidden">
+      <div class="section-title">
+        <div>
+          <h2>Gabby &amp; LB Admin Dashboard</h2>
+          <p>Admin tools for employees, PINs, PTO reports, and notes. PTO usage is pulled from the connected Google Sheet so employees can view current PTO from any device.</p>
+        </div>
+        <div class="button-group">
+          <button class="primary" onclick="openEmployeeEditor()">Add Employee</button>
+          <button class="ghost" onclick="exportCsv('balances')">Export PTO Balances <span class="info-bubble" title="Shows each employee’s current PTO position, including vacation, sick, and personal time earned, used, and remaining.">ⓘ</span></button>
+          <button class="ghost" onclick="exportCsv('usage')">Export PTO Usage <span class="info-bubble" title="Exports the PTO history log, showing each PTO entry by employee, date used, PTO type, hours used, and notes.">ⓘ</span></button>
+          <button class="ghost backup-action" onclick="exportPortalBackup()">Export Portal Data Backup</button>
+          <label class="ghost backup-action import-backup-label" for="portalBackupInput">Import Portal Data</label>
+          <input id="portalBackupInput" class="hidden-file-input" type="file" accept="application/json,.json" onchange="importPortalBackup(event)" />
+        </div>
+      </div>
+
+      <div class="dashboard-grid" id="dashboardCards"></div>
+
+      <div class="admin-filters">
+        <input id="adminSearchInput" type="search" placeholder="Search employees..." oninput="renderAdminTable()" />
+        <select id="statusFilter" onchange="renderAdminTable()">
+          <option value="Active">Active employees</option>
+          <option value="Inactive">Inactive employees</option>
+          <option value="All">All employees</option>
+        </select>
+        <select id="reviewFilter" onchange="renderAdminTable()">
+          <option value="All">All records</option>
+          <option value="Needs Review">Needs review</option>
+          <option value="PIN Needed">PIN needed</option>
+          <option value="Overrides">Benefit overrides</option>
+        </select>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th><th>Hire Date</th><th>Years</th><th>PIN</th><th>Vacation</th><th>Sick</th><th>Personal</th><th>Status</th><th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="adminEmployeeTable"></tbody>
+        </table>
+      </div>
+
+      <div class="report-grid">
+        <section class="report-card">
+          <div class="section-title compact"><div><h3>PTO Balance Report <span class="info-bubble" title="Shows each employee’s current PTO position, including vacation, sick, and personal time earned, used, and remaining.">ⓘ</span></h3><p>Earned, used, and remaining balances for active employees.</p></div><button class="ghost mini" onclick="exportCsv('balances')">Export CSV</button></div>
+          <div class="table-wrap report"><table><thead><tr><th>Employee</th><th>Vac Earned</th><th>Vac Used</th><th>Vac Rem</th><th>Sick Earned</th><th>Sick Used</th><th>Sick Rem</th><th>Personal Earned</th><th>Personal Used</th><th>Personal Rem</th></tr></thead><tbody id="ptoBalanceTable"></tbody></table></div>
+        </section>
+        <section class="report-card">
+          <div class="section-title compact"><div><h3>PTO Usage Report <span class="info-bubble" title="Shows the full PTO history log by employee, date used, PTO type, amount used, and notes.">ⓘ</span></h3><p>Dated record of PTO usage entered by admin.</p></div><button class="ghost mini" onclick="exportCsv('usage')">Export CSV</button></div>
+          <div class="table-wrap report"><table><thead><tr><th>Employee</th><th>Date Used</th><th>Type</th><th>Amount</th><th>Notes</th></tr></thead><tbody id="ptoUsageTable"></tbody></table></div>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <div id="modalBackdrop" class="modal-backdrop hidden" onclick="closeModal(event)">
+    <div class="modal wide" onclick="event.stopPropagation()">
+      <div class="modal-header"><h3 id="modalTitle">Edit Employee</h3><button class="icon-btn" onclick="hideModal()">×</button></div>
+      <form id="employeeForm" onsubmit="saveEmployee(event)">
+        <input type="hidden" id="editEmployeeId" />
+        <div class="form-grid">
+          <label>Employee Name<input id="editName" required /></label>
+          <label>Birthday PIN (MMDD)<input id="editPin" inputmode="numeric" maxlength="4" placeholder="0315" /></label>
+          <label>Hire Date<input id="editHireDate" type="date" required /></label>
+          <label>Hours Available<input id="editHoursAvailable" placeholder="Inquire about hours available" /></label>
+          <label>Status<select id="editStatus"><option>Active</option><option>Inactive</option></select></label>
+          <label>Maternity/Paternity Leave<select id="editFamilyLeave"><option value="">None</option><option>Maternity Leave</option><option>Paternity Leave</option></select></label>
+          <label>Inactive Reason<select id="editInactiveReason"><option value="">None</option><option>College / Seasonal Return</option><option>Leave of Absence</option><option>Seasonal Employee</option><option>Resigned</option><option>Terminated</option><option>Retired</option><option>Other</option></select></label>
+          <label>Inactive Date<input id="editInactiveDate" type="date" /></label>
+          <label>Reactivation Date<input id="editReactivationDate" type="date" /></label>
+          <label>Vacation Earned Override<input id="editVacationOverride" type="number" min="0" step="0.25" placeholder="Leave blank for auto" /></label>
+          <label>Sick Earned Override<input id="editSickOverride" type="number" min="0" step="0.25" placeholder="Leave blank for auto" /></label>
+          <label>Personal Earned Override<input id="editPersonalOverride" type="number" min="0" step="0.25" placeholder="Leave blank for auto" /></label>
+        </div>
+        <label>Employee Notes <span class="hint">visible to employee</span><textarea id="editEmployeeNotes" rows="3"></textarea></label>
+        <label>HR Notes <span class="hint">admin only</span><textarea id="editHrNotes" rows="3"></textarea></label>
+        <label>Finance Notes <span class="hint">admin only</span><textarea id="editFinanceNotes" rows="3"></textarea></label>
+        <fieldset class="override-box"><legend>Benefit Overrides</legend><label><input id="overrideHco" type="checkbox" /> HCO Eligible</label><label><input id="overrideErsp" type="checkbox" /> ERSP Eligible</label><label><input id="overrideTuition" type="checkbox" /> Tuition Benefit Eligible</label></fieldset>
+        <fieldset class="override-box"><legend>PTO Usage Log</legend>
+          <div class="usage-entry-row"><input id="usageDate" type="date" /><select id="usageType"><option>Vacation</option><option>Sick</option><option>Personal</option></select><input id="usageAmount" type="number" min="0.25" step="0.25" value="1" /><input id="usageNotes" placeholder="Notes" /><button type="button" class="primary mini" onclick="addPtoUsage()">Add Usage</button></div>
+          <div id="ptoUsageList"></div>
+        </fieldset>
+        <div class="modal-actions"><button type="button" class="ghost" onclick="hideModal()">Cancel</button><button type="submit" class="primary">Save Employee</button></div>
+      </form>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
