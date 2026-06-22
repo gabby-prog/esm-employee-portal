@@ -3,16 +3,16 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Elite Sports Management | Admin Mode</title>
+  <title>Elite Sports Management | Admin Dashboard</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
-<body class="admin-page">
+<body>
   <header class="topbar">
     <div class="brand-lockup" aria-label="Elite Sports Management logo">
       <img class="brand-logo-small" src="assets/esm-logo.png" alt="Elite Sports Management logo" />
       <div>
         <div class="brand-name">Elite Sports Management</div>
-        <div class="brand-subtitle">Admin Mode</div>
+        <div class="brand-subtitle">Employee Management Center</div>
       </div>
     </div>
     <nav class="top-actions site-nav">
@@ -20,15 +20,111 @@
       <a class="nav-link" href="employee-access.html">Employee Access</a>
       <a class="nav-link" href="pto-request.html">PTO Request</a>
       <a class="nav-link" href="benefits-guide.html">Benefits Guide</a>
-      <a class="nav-link primary-nav" href="admin-dashboard.html">Admin Mode</a>
+      <a class="nav-link primary-nav" href="admin-dashboard.html">Admin Dashboard</a>
+      <button id="adminToggle" class="primary" onclick="toggleAdmin()">Admin Mode</button>
     </nav>
   </header>
 
   <main>
-    <section id="adminPanel" class="panel admin-panel" data-page="admin">
+    <section class="hero refreshed">
+      <div class="hero-bg-badge">ESM</div>
+      <div class="hero-card">
+        <img class="hero-logo" src="assets/esm-logo.png" alt="Elite Sports Management logo" />
+        <div class="eyebrow">Welcome to the Elite Sports Management Benefits Portal</div>
+        <h1>Employees Are Our Greatest Asset</h1>
+        <p class="mission">
+          At Elite Sports Management, we recognize that our success is built on the dedication,
+          talent, and commitment of our employees. Every athlete coached, event produced, family
+          served, and customer supported is the direct result of the people who make up our organization.
+        </p>
+        <p>
+          The benefits offered through Elite Sports Management are designed to support our team members,
+          reward long-term commitment, encourage professional growth, and promote a healthy balance between
+          work and family life.
+        </p>
+        <div class="mission-card">
+          <h2>Our Mission</h2>
+          <p>Elite Sports Management exists to empower our family of companies through exceptional leadership, strategic coordination, and comprehensive operational support. By delivering expert human resources, financial management, and administrative services, we enable each company to achieve peak productivity and sustained success.</p>
+        </div>
+      </div>
+      <div class="hero-side-card compact-portal-actions">
+        <div class="side-title">What this portal helps you view</div>
+        <ul>
+          <li>Hire-date based benefit eligibility</li>
+          <li>Vacation, sick, and personal balances</li>
+          <li>Upcoming benefit milestones</li>
+          <li>Employee-visible notes</li>
+        </ul>
+        <div class="portal-action-buttons">
+          <button class="primary large" onclick="scrollToSection('employeeSearch')">Employee Access</button>
+          <button class="ghost large light" onclick="scrollToSection('ptoRequest')">PTO Request</button>
+          <button class="ghost large light" onclick="scrollToSection('benefitChart')">Benefit Chart</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="employeeSearch" class="panel employee-facing access-panel">
+      <div class="section-title centered">
+        <div>
+          <h2>Access Your Benefits Profile</h2>
+          <p>Enter your name and birthday PIN. Birthday PIN format is MMDD, such as 0315 for March 15.</p>
+        </div>
+      </div>
+      <div class="access-card">
+        <div class="search-row secure-search">
+          <input id="employeeSearchInput" type="search" placeholder="Employee name" oninput="renderEmployeeSearch()" />
+          <input id="employeePinInput" type="password" inputmode="numeric" maxlength="4" placeholder="Birthday PIN (MMDD)" oninput="renderEmployeeSearch()" />
+          <button class="primary" onclick="renderEmployeeSearch()">View My Benefits</button>
+        </div>
+        <div class="hint-line">For privacy, employee profiles require a matching name and birthday PIN.</div>
+      </div>
+      <div id="employeeSearchResults" class="results"></div>
+      <div id="employeeProfile" class="profile"></div>
+    </section>
+
+
+    <section id="benefitChart" class="panel benefit-chart-panel">
+      <div class="section-title centered">
+        <div>
+          <h2>ESM Benefit Chart</h2>
+          <p>General overview of possible ESM benefits. Employee profiles show only benefits currently active for that employee.</p>
+        </div>
+      </div>
+      <div class="table-wrap benefit-chart-table">
+        <table>
+          <thead><tr><th>Benefit</th><th>General Availability / Sliding Scale</th></tr></thead>
+          <tbody>
+            <tr><td>Vacation</td><td>Less than 1 year: 0 weeks; 1-5 years: 1 week; 6-10 years: 2 weeks; 11-20 years: 3 weeks; 21+ years: 4 weeks.</td></tr>
+            <tr><td>Sick Days</td><td>Available after one full year of service according to ESM policy.</td></tr>
+            <tr><td>Personal Days</td><td>Available after one full year of service according to ESM policy.</td></tr>
+            <tr><td>Paid Holidays</td><td>Company-recognized paid holidays listed in each active profile.</td></tr>
+            <tr><td>Paid Weather Closures</td><td>Applies when ESM closes due to qualifying inclement weather.</td></tr>
+            <tr><td>Health Care Offset</td><td>$3,600 annually for employees actively receiving HCO.</td></tr>
+            <tr><td>Elite Retirement Savings Plan</td><td>Employer matching benefit available according to plan guidelines. Contact gabby@elitesportsmgnt.com for information.</td></tr>
+            <tr><td>Maternity/Paternity Leave</td><td>Only one family leave benefit applies to a profile at a time: Maternity Leave or Paternity Leave.</td></tr>
+            <tr><td>Tuition Benefit</td><td>Applies according to ESM eligibility and admin tracking.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="ptoRequest" class="panel pto-request">
       <div class="section-title">
         <div>
-          <h2>Gabby &amp; LB Admin Mode</h2>
+          <h2>Submit PTO Request</h2>
+          <p>Requests are submitted through the official ESM PTO Log.</p>
+        </div>
+        <a class="button-link" href="https://docs.google.com/forms/d/e/1FAIpQLSemcJD6q4DuEtAyDJwCjvNV41GRQ4JMERygPceE0OERyRpXPA/viewform?usp=sharing&ouid=105773198368027497233" target="_blank" rel="noopener">Open in New Tab</a>
+      </div>
+      <div class="form-frame-wrap">
+        <iframe title="ESM PTO Request Form" src="https://docs.google.com/forms/d/e/1FAIpQLSemcJD6q4DuEtAyDJwCjvNV41GRQ4JMERygPceE0OERyRpXPA/viewform?embedded=true" loading="lazy">Loading...</iframe>
+      </div>
+    </section>
+
+    <section id="adminPanel" class="panel admin-panel hidden">
+      <div class="section-title">
+        <div>
+          <h2>Gabby &amp; LB Admin Dashboard</h2>
           <p>Admin tools for employees, PINs, PTO reports, and notes. PTO requests from Google Forms appear as pending until you mark them paid/processed or manually enter approved usage.</p>
         </div>
         <div class="button-group">
@@ -85,6 +181,7 @@
         </section>
       </div>
     </section>
+  </main>
 
   <div id="modalBackdrop" class="modal-backdrop hidden" onclick="closeModal(event)">
     <div class="modal wide" onclick="event.stopPropagation()">
@@ -111,8 +208,6 @@
         <label>Employee Notes <span class="hint">visible to employee</span><textarea id="editEmployeeNotes" rows="3"></textarea></label>
         <label>HR Notes <span class="hint">admin only</span><textarea id="editHrNotes" rows="3"></textarea></label>
         <label>Finance Notes <span class="hint">admin only</span><textarea id="editFinanceNotes" rows="3"></textarea></label>
-        <label>Employment History Blocks <span class="hint">admin only - one line per block: Start Date | Inactive Date | Reactivation Date | Reason | Active</span><textarea id="editEmploymentHistory" rows="4" placeholder="2020-01-01 | 2022-05-01 | 2023-08-15 | College / Seasonal Return |
-2023-08-15 | | | | Active"></textarea></label>
         <fieldset class="override-box"><legend>Benefit Overrides</legend><label><input id="overrideHco" type="checkbox" /> HCO Eligible</label><label><input id="overrideErsp" type="checkbox" /> ERSP Eligible</label><label><input id="overrideTuition" type="checkbox" /> Tuition Benefit Eligible</label></fieldset>
         <fieldset class="override-box"><legend>PTO Usage Log</legend>
           <div class="usage-entry-row"><input id="usageDate" type="date" /><select id="usageType"><option>Vacation</option><option>Sick</option><option>Personal</option></select><input id="usageAmount" type="number" min="0.25" step="0.25" value="1" /><input id="usageNotes" placeholder="Notes" /><button type="button" class="primary mini" onclick="addPtoUsage()">Add Usage</button></div>
@@ -122,8 +217,8 @@
       </form>
     </div>
   </div>
-  </main>
 
   <script src="app.js"></script>
+<script>document.addEventListener('DOMContentLoaded',()=>{setTimeout(()=>{const el=document.getElementById('adminPanel'); if(el) el.scrollIntoView({block:'start'});},250);});</script>
 </body>
 </html>
