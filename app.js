@@ -2498,7 +2498,6 @@ function normalizeEmployeeRecord(e, pinMap={}, namePinMap={}){
   normalized.hrNotes = e.hrNotes || '';
   normalized.financeNotes = e.financeNotes || '';
   normalized.status = e.status || 'Active';
-      normalized.classification = e.classification || '';
   normalized.inactiveReason = e.inactiveReason || '';
   normalized.inactiveDate = e.inactiveDate || '';
   normalized.reactivationDate = e.reactivationDate || '';
@@ -2506,6 +2505,8 @@ function normalizeEmployeeRecord(e, pinMap={}, namePinMap={}){
   normalized.overrides = e.overrides || {};
   normalized.hoursAvailable = e.hoursAvailable || '';
   normalized.familyLeave = e.familyLeave || '';
+  normalized.employmentHistory = Array.isArray(e.employmentHistory) ? e.employmentHistory : [];
+  normalized.deniedPtoRequests = Array.isArray(e.deniedPtoRequests) ? e.deniedPtoRequests : [];
   normalized.createdFrom = e.createdFrom || 'Imported portal backup';
   return normalized;
 }
@@ -2567,15 +2568,6 @@ function serviceDateForMilestone(emp, years){
   return new Date(base.getTime() + servicePauseMs(emp));
 }
 function vacationWeeks(years){ if(years < 1) return 0; if(years <= 5) return 1; if(years <= 10) return 2; if(years <= 20) return 3; return 4; }
-function sickPersonalAllowance(emp, benefitEligible){
-  if(!benefitEligible) return 0;
-  const c = String(emp.classification || '').trim();
-  if(c === 'Salary' || c === 'Management Full-Time') return 3;
-  if(c === 'Substantial Time Part-Time') return 2;
-  if(c === 'Short Time') return 1;
-  if(c === 'Less than 5 Hours') return 0;
-  return 3;
-}
 function nextAnniversary(input){
   if(typeof input === 'object'){
     const emp=input, today=endOfToday();
@@ -2646,20 +2638,37 @@ function normalizePtoAmountUnits(hours, type){
 }
 function displayPtoAmount(entry){
   const n = Number(entry.amount || 0);
-  if(entry.type === 'Vacation') return entry.vacationHoursUsed ? `${Number(entry.vacationHoursUsed)} hour(s) = ${n} week(s)` : `${n} week(s)`;
+  if(entry.type === 'Vacation') return `${n} week(s)`;
   if(entry.type === 'Sick' || entry.type === 'Personal') return `${n} day(s)`;
   return entry.amountDisplay || String(n);
 }
 function currentBenefitYear(){ return new Date().getFullYear(); }
-function isCurrentBenefitYearEntry(entry){
+function anniversaryForYear(emp, year){
+  const hire = parseDate(emp?.hireDate);
+  return new Date(year, hire.getMonth(), hire.getDate());
+}
+function currentBenefitPeriod(emp){
+  const today = endOfToday();
+  if(!emp?.hireDate) return {start:new Date(today.getFullYear(),0,1), end:new Date(today.getFullYear()+1,0,1)};
+  let start = anniversaryForYear(emp, today.getFullYear());
+  if(start > today) start = anniversaryForYear(emp, today.getFullYear()-1);
+  const end = anniversaryForYear(emp, start.getFullYear()+1);
+  return {start, end};
+}
+function benefitYearLabel(emp){
+  const p = currentBenefitPeriod(emp);
+  return `${p.start.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'})} - ${p.end.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'})}`;
+}
+function isCurrentBenefitYearEntry(entry, emp){
   const iso = entry.dateUsed || entry.dateSubmitted || '';
-  if(!iso) return true;
+  if(!iso || !emp) return true;
   const d = new Date(iso);
   if(isNaN(d.getTime())) return true;
-  return d.getFullYear() === currentBenefitYear();
+  const p = currentBenefitPeriod(emp);
+  return d >= p.start && d < p.end;
 }
 function sumPtoUsage(emp, type){
-  const entries = getPtoEntries(emp).filter(isCurrentBenefitYearEntry);
+  const entries = getPtoEntries(emp).filter(x=>isCurrentBenefitYearEntry(x, emp));
   return entries.filter(x => x.type === type).reduce((sum,x)=>sum + Number(x.amount || 0), 0);
 }
 function usedOverrideValue(emp, key){
@@ -2673,8 +2682,8 @@ function autoBenefits(emp){
   const overrides = emp.overrides || {};
   const benefitEligible = yrs >= 1;
   const vacationEarned = p.vacationEarnedOverride ?? vacationWeeks(yrs);
-  const sickEarned = p.sickEarnedOverride ?? sickPersonalAllowance(emp, benefitEligible);
-  const personalEarned = p.personalEarnedOverride ?? sickPersonalAllowance(emp, benefitEligible);
+  const sickEarned = p.sickEarnedOverride ?? (benefitEligible ? 3 : 0);
+  const personalEarned = p.personalEarnedOverride ?? (benefitEligible ? 3 : 0);
   const vacationUsed = usedOverrideValue(emp, 'vacationUsedOverride') ?? sumPtoUsage(emp, 'Vacation') ?? Number(p.vacationUsed || 0);
   const sickUsed = usedOverrideValue(emp, 'sickUsedOverride') ?? sumPtoUsage(emp, 'Sick') ?? Number(p.sickUsed || 0);
   const personalUsed = usedOverrideValue(emp, 'personalUsedOverride') ?? sumPtoUsage(emp, 'Personal') ?? Number(p.personalUsed || 0);
@@ -2699,6 +2708,17 @@ function fmtDate(iso){ if(!iso) return '—'; return parseDate(iso).toLocaleDate
 function moneySafe(s){ return String(s??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
 function escapeHtml(s){ return moneySafe(s); }
 function dateToIso(d){ return d.toISOString().slice(0,10); }
+function employmentHistoryToText(emp){
+  const rows = Array.isArray(emp?.employmentHistory) ? emp.employmentHistory : [];
+  return rows.map(b => [b.startDate||'', b.inactiveDate||'', b.reactivationDate||'', b.reason||'', b.active ? 'Active' : ''].join(' | ')).join('\n');
+}
+function parseEmploymentHistoryText(text){
+  return String(text||'').split(/\n+/).map(line=>line.trim()).filter(Boolean).map(line=>{
+    const parts = line.split('|').map(x=>x.trim());
+    return {startDate:parts[0]||'', inactiveDate:parts[1]||'', reactivationDate:parts[2]||'', reason:parts[3]||'', active:/active/i.test(parts[4]||'')};
+  }).filter(x=>x.startDate);
+}
+
 function scrollToSection(id){ document.getElementById(id)?.scrollIntoView({behavior:'smooth', block:'start'}); }
 
 function findMatchingEmployees(name, pin){
@@ -2709,10 +2729,13 @@ function findMatchingEmployees(name, pin){
     .sort((a,b)=>a.name.localeCompare(b.name));
 }
 function renderEmployeeSearch(){
-  const name = document.getElementById('employeeSearchInput').value;
-  const pin = document.getElementById('employeePinInput').value;
+  const nameInput = document.getElementById('employeeSearchInput');
+  const pinInput = document.getElementById('employeePinInput');
   const el = document.getElementById('employeeSearchResults');
   const profile = document.getElementById('employeeProfile');
+  if(!nameInput || !pinInput || !el || !profile) return;
+  const name = nameInput.value;
+  const pin = pinInput.value;
   profile.innerHTML = '';
   if(normalizeName(name).length < 2 || normalizePin(pin).length !== 4){
     el.innerHTML = '<div class="muted">Enter your name and 4-digit birthday PIN to view your profile.</div>';
@@ -2726,7 +2749,7 @@ function renderEmployeeSearch(){
   el.innerHTML = results.map(emp => `<div class="result-card"><div><strong>${escapeHtml(emp.name)}</strong><div class="muted">Hired ${fmtDate(emp.hireDate)}</div></div><button class="primary" onclick="openDedicatedProfile('${emp.id}')">View My Benefits</button></div>`).join('');
 }
 function paidHolidayList(){
-  return `<ul class="holiday-list"><li>New Year's Day</li><li>Memorial Day</li><li>Independence Day</li><li>Labor Day</li><li>Thanksgiving Day</li><li>Christmas Eve</li><li>Christmas Day</li></ul>`;
+  return `<ul class="holiday-list"><li>New Year's Day</li><li>Memorial Day</li><li>Independence Day</li><li>Labor Day</li><li>Thanksgiving Day</li><li>Day After Thanksgiving</li><li>Christmas Eve</li><li>Christmas Day</li></ul>`;
 }
 function vacationScheduleTable(){
   return `<div class="schedule-card"><strong>Vacation Weeks Schedule</strong><div class="table-wrap small schedule-table"><table><thead><tr><th>Years of Service</th><th>Vacation Weeks</th></tr></thead><tbody><tr><td>Less than 1 year</td><td>0 weeks</td></tr><tr><td>1-5 years</td><td>1 week</td></tr><tr><td>6-10 years</td><td>2 weeks</td></tr><tr><td>11-20 years</td><td>3 weeks</td></tr><tr><td>21+ years</td><td>4 weeks</td></tr></tbody></table></div></div>`;
@@ -2772,32 +2795,27 @@ function profileTimeline(emp){
   if(b.hcoEligible) events.push({date: emp.hireDate, type:'Benefit', title:'HCO Active', detail:'Health Care Offset is active on this profile.'});
   if(b.erspEligible) events.push({date: emp.hireDate, type:'Benefit', title:'ERSP Active', detail:'Elite Retirement Savings Plan is active on this profile.'});
   const y=currentBenefitYear();
-  events.push({date: dateToIso(b.nextAnniversary || endOfToday()), type:'System', title:'Anniversary PTO Reset', detail:`On the employee anniversary, vacation resets to ${b.vacationEarned} week(s), sick resets to ${b.sickEarned} day(s), and personal resets to ${b.personalEarned} day(s). Unused prior-year balances do not roll over.`});
+  const anniversaryResetDate = emp.hireDate ? `${y}-${String(parseDate(emp.hireDate).getMonth()+1).padStart(2,'0')}-${String(parseDate(emp.hireDate).getDate()).padStart(2,'0')}` : `${y}-01-01`;
+  events.push({date:anniversaryResetDate, type:'System', title:'Anniversary PTO Reset', detail:`PTO reset on employee anniversary. Vacation reset to ${b.vacationEarned} week(s). Sick reset to ${b.sickEarned} day(s). Personal reset to ${b.personalEarned} day(s). Unused prior-year balances did not roll over.`});
   getPtoEntries(emp).forEach(x=>events.push({date:x.dateUsed||x.dateSubmitted, type:'PTO', title:`${x.type} Used`, detail:displayPtoAmount(x)}));
+  (emp.deniedPtoRequests||[]).forEach(x=>events.push({date:x.decidedAt||x.dateSubmitted||x.dateUsed, type:'PTO', title:`${x.type} Request Denied`, detail:x.notes||'PTO request denied.'}));
   return events.filter(e=>e.date).sort((a,b)=>String(b.date).localeCompare(String(a.date))).map(e=>`<div class="timeline-item"><div class="timeline-dot"></div><div><div class="timeline-date">${fmtDate(e.date)} · ${escapeHtml(e.type)}</div><strong>${escapeHtml(e.title)}</strong><p>${escapeHtml(e.detail)}</p></div></div>`).join('') || '<div class="muted">No timeline events recorded yet.</div>';
 }
 function openDedicatedProfile(id){
-  try { sessionStorage.setItem('esmAuthorizedProfileId', id); } catch(e) {}
-  const profileUrl = new URL('employee-profile.html', window.location.href);
-  profileUrl.searchParams.set('id', id);
-  window.location.assign(profileUrl.toString());
+  sessionStorage.setItem('esmAuthorizedProfileId', id);
+  window.location.href = `employee-profile.html?id=${encodeURIComponent(id)}`;
 }
 function bootProfilePage(){
   const target=document.getElementById('dedicatedEmployeeProfile');
   if(!target) return;
   const params=new URLSearchParams(window.location.search);
   const id=params.get('id');
-  if(!id){
-    target.innerHTML='<div class="panel"><div class="alert-soft">No employee was selected. Please access your profile through Employee Access using your name and PIN.</div><p><a class="button-link" href="employee-access.html">Go to Employee Access</a></p></div>';
-    return;
-  }
-  const emp = employees.find(e => e.id === id);
-  if(!emp){
-    target.innerHTML='<div class="panel"><div class="alert-soft">Employee profile not found. Please return to Employee Access and try again.</div><p><a class="button-link" href="employee-access.html">Go to Employee Access</a></p></div>';
-    return;
-  }
+  const authorized=sessionStorage.getItem('esmAuthorizedProfileId');
+  if(!id){ target.innerHTML='<div class="panel"><div class="alert-soft">No employee profile was selected.</div><p><a class="button-link" href="employee-access.html">Go to Employee Access</a></p></div>'; return; }
+  if(authorized && id!==authorized){ sessionStorage.setItem('esmAuthorizedProfileId', id); }
   window.showEmployeeProfileInto = target;
   showEmployeeProfile(id);
+  if(!target.innerHTML.trim()){ target.innerHTML='<div class="panel"><div class="alert-soft">Employee profile could not be found.</div><p><a class="button-link" href="employee-access.html">Go to Employee Access</a></p></div>'; }
 }
 
 function showEmployeeProfile(id){
@@ -2833,9 +2851,10 @@ function showEmployeeProfile(id){
           <div class="summary-card"><span>Years of Service</span><strong>${b.yearsDecimal.toFixed(1)}</strong></div>
           <div class="summary-card"><span>Active Benefits</span><strong>${(activeBenefits.match(/active-benefit/g)||[]).length}</strong></div>
           <div class="summary-card"><span>Next Milestone</span><strong>${nextMilestone ? nextMilestone.years + ' Years' : 'Top Tier'}</strong></div>
-          <div class="summary-card"><span>Benefit Year</span><strong>${currentBenefitYear()}</strong></div>
+          <div class="summary-card"><span>Benefit Year</span><strong class="small-strong">${benefitYearLabel(emp)}</strong></div>
         </div>
         <div class="vacation-progress"><strong>Progress to Next Vacation Tier</strong>${vacationTierProgress(emp)}</div>
+        <div class="alert-soft reset-note"><strong>PTO resets on this employee's anniversary date.</strong> Sick, personal, and vacation balances do not roll over from one benefit year to the next.</div>
         <div class="kpi-grid">
           <div class="kpi"><div class="label">Vacation Weeks</div><div class="value">${b.vacationRemaining}</div><div class="muted">${b.vacationEarned} earned · ${b.vacationUsed} used</div></div>
           <div class="kpi"><div class="label">Sick Days</div><div class="value">${b.sickRemaining}</div><div class="muted">${b.sickEarned} earned · ${b.sickUsed} used</div></div>
@@ -2934,7 +2953,7 @@ function renderAdminTable(){
       <td>${b.sickRemaining} / ${b.sickEarned}</td>
       <td>${b.personalRemaining} / ${b.personalEarned}</td>
       <td><span class="pill ${emp.status==='Active'?'ok':'warn'}">${emp.status}</span></td>
-      <td><div class="action-links"><button class="ghost mini" onclick="openEmployeeEditor('${emp.id}')">Edit</button><button class="ghost danger mini" onclick="deleteEmployee('${emp.id}')">Delete</button></div></td>
+      <td><div class="action-links"><button class="ghost mini" onclick="openDedicatedProfile('${emp.id}')">Profile</button><button class="ghost mini" onclick="openEmployeeEditor('${emp.id}')">Edit</button><button class="ghost danger mini" onclick="deleteEmployee('${emp.id}')">Delete</button></div></td>
     </tr>`;
   }).join('') || '<tr><td colspan="9" class="muted">No employees match this filter.</td></tr>';
 }
@@ -2948,7 +2967,6 @@ function openEmployeeEditor(id){
   document.getElementById('editHireDate').value = emp?.hireDate || '';
   document.getElementById('editHoursAvailable').value = emp?.hoursAvailable || '';
   document.getElementById('editStatus').value = emp?.status || 'Active';
-  if(document.getElementById('editClassification')) document.getElementById('editClassification').value = emp?.classification || '';
   document.getElementById('editFamilyLeave').value = emp?.familyLeave || '';
   document.getElementById('editInactiveReason').value = emp?.inactiveReason || '';
   document.getElementById('editInactiveDate').value = emp?.inactiveDate || '';
@@ -2963,6 +2981,7 @@ function openEmployeeEditor(id){
   document.getElementById('editEmployeeNotes').value = emp?.employeeNotes || '';
   document.getElementById('editHrNotes').value = emp?.hrNotes || '';
   document.getElementById('editFinanceNotes').value = emp?.financeNotes || '';
+  if(document.getElementById('editEmploymentHistory')) document.getElementById('editEmploymentHistory').value = employmentHistoryToText(emp);
   const o = emp?.overrides || {};
   document.getElementById('overrideHco').checked = !!o.hco;
   document.getElementById('overrideErsp').checked = !!o.ersp;
@@ -2991,7 +3010,6 @@ function saveEmployee(ev){
   emp.hireDate = document.getElementById('editHireDate').value;
   emp.hoursAvailable = document.getElementById('editHoursAvailable').value.trim();
   emp.status = document.getElementById('editStatus').value;
-  if(document.getElementById('editClassification')) emp.classification = document.getElementById('editClassification').value;
   emp.familyLeave = document.getElementById('editFamilyLeave').value;
   emp.inactiveReason = document.getElementById('editInactiveReason').value;
   emp.inactiveDate = document.getElementById('editInactiveDate').value;
@@ -2999,6 +3017,7 @@ function saveEmployee(ev){
   emp.employeeNotes = document.getElementById('editEmployeeNotes').value.trim();
   emp.hrNotes = document.getElementById('editHrNotes').value.trim();
   emp.financeNotes = document.getElementById('editFinanceNotes').value.trim();
+  if(document.getElementById('editEmploymentHistory')) emp.employmentHistory = parseEmploymentHistoryText(document.getElementById('editEmploymentHistory').value);
   emp.pto = {
     ...(emp.pto || {}),
     vacationEarnedOverride: blankNull('editVacationOverride'),
@@ -3012,16 +3031,6 @@ function saveEmployee(ev){
   emp.ptoUsage = Array.isArray(emp.ptoUsage) ? emp.ptoUsage : [];
   saveAll(); hideModal(); renderAllAdmin(); renderEmployeeSearch();
 }
-function toggleVacationUsageFields(){
-  const typeEl = document.getElementById('usageType');
-  const hoursEl = document.getElementById('usageVacationHours');
-  const amountEl = document.getElementById('usageAmount');
-  if(!typeEl || !hoursEl || !amountEl) return;
-  const isVacation = typeEl.value === 'Vacation';
-  hoursEl.style.display = isVacation ? '' : 'none';
-  hoursEl.placeholder = 'Vacation hours used';
-  amountEl.placeholder = isVacation ? 'Weeks used' : 'Days used';
-}
 function addPtoUsage(){
   const id = document.getElementById('editEmployeeId').value;
   const emp = employees.find(e=>e.id===id);
@@ -3029,13 +3038,11 @@ function addPtoUsage(){
   const dateUsed = document.getElementById('usageDate').value;
   const type = document.getElementById('usageType').value;
   const amount = Number(document.getElementById('usageAmount').value || 0);
-  const vacationHoursUsed = Number(document.getElementById('usageVacationHours')?.value || 0);
   const notes = document.getElementById('usageNotes').value.trim();
   if(!dateUsed || !amount){ alert('Enter a date used and amount.'); return; }
-  if(type === 'Vacation' && !vacationHoursUsed){ alert('For vacation, enter Vacation Hours Used and Weeks Used.'); return; }
   emp.ptoUsage = Array.isArray(emp.ptoUsage) ? emp.ptoUsage : [];
-  emp.ptoUsage.push({id:`PTO${Date.now()}`, dateUsed, type, amount, vacationHoursUsed: type === 'Vacation' ? vacationHoursUsed : null, notes, enteredAt:new Date().toISOString()});
-  document.getElementById('usageDate').value=''; document.getElementById('usageAmount').value='1'; if(document.getElementById('usageVacationHours')) document.getElementById('usageVacationHours').value=''; document.getElementById('usageNotes').value='';
+  emp.ptoUsage.push({id:`PTO${Date.now()}`, dateUsed, type, amount, notes, enteredAt:new Date().toISOString()});
+  document.getElementById('usageDate').value=''; document.getElementById('usageAmount').value='1'; document.getElementById('usageNotes').value='';
   saveAll(); renderEmployeeUsageEditor(emp); renderAllAdmin();
 }
 function deletePtoUsage(empId, usageId){
@@ -3129,6 +3136,7 @@ function sheetPtoRecord(row, index){
 }
 function applyLivePtoUsage(rows){
   const grouped = {};
+  const deniedGrouped = {};
   pendingPtoRequests = [];
   rows.forEach((row, index) => {
     const record = sheetPtoRecord(row, index);
@@ -3142,12 +3150,18 @@ function applyLivePtoUsage(rows){
       grouped[key].push(record);
     } else if(decision?.status === 'denied') {
       record.notes = decision.note || 'Denied';
+      record.decidedAt = decision.decidedAt || '';
+      const key = normalizeName(record.name);
+      if(!deniedGrouped[key]) deniedGrouped[key] = [];
+      deniedGrouped[key].push(record);
     } else {
       pendingPtoRequests.push(record);
     }
   });
   employees.forEach(emp => {
-    emp.livePtoUsage = grouped[normalizeName(emp.name)] || [];
+    const key = normalizeName(emp.name);
+    emp.livePtoUsage = grouped[key] || [];
+    emp.deniedPtoRequests = deniedGrouped[key] || [];
   });
 }
 function googleDateToIso(value){
@@ -3165,6 +3179,7 @@ function exportPortalBackup(){
     exportedAt: new Date().toISOString(),
     storageKey: STORAGE_KEY,
     employeeCount: employees.length,
+    ptoRequestDecisions: ptoRequestDecisions,
     employees: employees
   };
   const dateStamp = new Date().toISOString().slice(0,10);
@@ -3192,6 +3207,7 @@ function importPortalBackup(ev){
       const pinMap = Object.fromEntries(freshSeed.map(e => [e.id, e.pin || '']));
       const namePinMap = Object.fromEntries(freshSeed.map(e => [normalizeName(e.name), e.pin || '']));
       employees = records.map(e => normalizeEmployeeRecord(e, pinMap, namePinMap));
+      if(parsed.ptoRequestDecisions){ ptoRequestDecisions = parsed.ptoRequestDecisions; savePtoRequestDecisions(); }
       saveAll();
       renderAllAdmin();
       renderEmployeeSearch();
@@ -3228,20 +3244,19 @@ function closeModal(ev){ if(ev.target.id === 'modalBackdrop') hideModal(); }
 document.addEventListener('DOMContentLoaded', async () => {
   await loadLivePtoUsage();
 
-  const dedicatedProfile = document.getElementById('dedicatedEmployeeProfile');
-  const searchResults = document.getElementById('employeeSearchResults');
-
-  if (dedicatedProfile) {
-    bootProfilePage();
-    return;
-  }
-
-  if (searchResults) {
-    searchResults.innerHTML = '<div class="muted">Enter your name and birthday PIN to access your profile.</div>';
+  const employeeSearchResults = document.getElementById('employeeSearchResults');
+  if (employeeSearchResults) {
+    employeeSearchResults.innerHTML = '<div class="muted">Enter your name and birthday PIN to access your profile.</div>';
     renderEmployeeSearch();
   }
 
-  if (adminMode) renderAllAdmin();
+  if (document.getElementById('dedicatedEmployeeProfile')) {
+    bootProfilePage();
+  }
 
-  try { toggleVacationUsageFields(); } catch(e) {}
+  if (document.body.classList.contains('admin-page') || document.getElementById('adminPanel')?.dataset?.page === 'admin') {
+    adminMode = true;
+    document.getElementById('adminPanel')?.classList.remove('hidden');
+    renderAllAdmin();
+  }
 });
