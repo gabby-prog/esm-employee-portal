@@ -1,11 +1,32 @@
 <!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><title>Elite Sports Management | Employee Profile</title><link rel="stylesheet" href="styles.css"/></head>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Elite Sports Management | Employee Profile</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
 <body>
-<header class="topbar">
-  <div class="brand-lockup"><img class="brand-logo-small" src="assets/esm-logo.png" alt="Elite Sports Management logo"/><div><div class="brand-name">Elite Sports Management</div><div class="brand-subtitle">Employee Profile</div></div></div>
-  <nav class="top-actions site-nav"><a class="nav-link" href="index.html">Home</a><a class="nav-link" href="employee-access.html">Employee Access</a><a class="nav-link" href="pto-request.html">PTO Request</a><a class="nav-link" href="benefits-guide.html">Benefits Guide</a><a class="nav-link primary-nav" href="admin-dashboard.html">Admin Dashboard</a></nav>
-</header>
-<main><div id="dedicatedEmployeeProfile" class="profile-page-shell"></div></main>
-<script src="app.js"></script>
-</body></html>
+  <header class="topbar">
+    <div class="brand-lockup" aria-label="Elite Sports Management logo">
+      <img class="brand-logo-small" src="assets/esm-logo.png" alt="Elite Sports Management logo" />
+      <div>
+        <div class="brand-name">Elite Sports Management</div>
+        <div class="brand-subtitle">Employee Profile</div>
+      </div>
+    </div>
+    <nav class="top-actions site-nav">
+      <a class="nav-link" href="index.html">Home</a>
+      <a class="nav-link primary-nav" href="admin-dashboard.html">Admin Mode</a>
+    </nav>
+  </header>
+
+  <main>
+    <div id="dedicatedEmployeeProfile" class="profile-page-shell">
+      <div class="panel"><div class="muted">Loading employee profile...</div></div>
+    </div>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
